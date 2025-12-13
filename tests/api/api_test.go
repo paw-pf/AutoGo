@@ -17,6 +17,7 @@ func TestAPI_Book(t *testing.T) {
 
 	testenv.SkipIfNotTagged(t, "smoke")
 	testenv.SkipIfNotTagged(t, "api")
+	testenv.SkipIfNotTagged(t, "regression")
 
 	testenv.RunTestAPI(t,
 		"Получение книг",

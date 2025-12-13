@@ -51,7 +51,7 @@ manual_ui:
   before_script:
     - *ui_before_script
   script:
-    - go test -v -p ./tests/... --tags=ui
+    - go test -v -p 1 ./tests/... --tags=ui
   artifacts:
     when: always
     paths:
@@ -66,7 +66,7 @@ manual_smoke:
   before_script:
     - *ui_before_script
   script:
-    - go test -v -p ./tests/... --tags=smoke
+    - go test -v -p 1 ./tests/... --tags=smoke
   artifacts:
     when: always
     paths:
@@ -81,7 +81,7 @@ manual_regression:
   before_script:
     - *ui_before_script
   script:
-    - go test -v -p ./tests/... --tags=regression
+    - go test -v -p 1 ./tests/... --tags=regression
   artifacts:
     when: always
     paths:
@@ -96,7 +96,7 @@ manual_api:
   before_script:
     - *api_before_script
   script:
-    - go test -v -p ./tests/... --tags=api
+    - go test -v -p 1 ./tests/... --tags=api
   artifacts:
     when: always
     paths:
