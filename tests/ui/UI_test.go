@@ -12,7 +12,8 @@ import (
 
 func TestUI_Practice_Form(t *testing.T) {
 	testenv.SkipIfNotTagged(t, "smoke")
-	testenv.SkipIfNotTagged(t, "api")
+	testenv.SkipIfNotTagged(t, "ui")
+	testenv.SkipIfNotTagged(t, "regression")
 
 	testenv.RunTestUI(t,
 		"Заполнение формы",
