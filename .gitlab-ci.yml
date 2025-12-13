@@ -1,0 +1,110 @@
+stages:
+  - manual_test
+
+variables:
+  GOMODCACHE: "${CI_PROJECT_DIR}/.mod-cache"
+  GOFLAGS: "-modcacherw"
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .mod-cache/
+
+# --- Установка Chrome (только для UI-тестов) ---
+.install_chrome: &install_chrome |
+  apt-get update
+  apt-get install -y \
+    wget gnupg ca-certificates xvfb \
+    libnss3 libatk-bridge2.0-0 libgtk-3-0 libxss1 libasound2 libxt6 \
+    fonts-liberation libappindicator3-1
+  wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg
+  echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list
+  apt-get update
+  apt-get install -y google-chrome-stable
+
+# --- Генерация .env из CI-переменных ---
+.create_env:
+  echo "API_BASE_URL=$API_BASE_URL" >> .env
+  echo "UI_BASE_URL=$UI_BASE_URL" >> .env
+  echo "USERNAME=$USERNAME" >> .env
+  echo "PASSWORD=$PASSWORD" >> .env
+  echo "HEADLESS=" >> .env
+
+# --- Общий before_script для UI-тестов ---
+.ui_before_script: &ui_before_script
+  - *install_chrome
+  - export PATH="/usr/bin:$PATH"
+  - google-chrome --version
+  - export DISPLAY=:99
+  - Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
+  - go version
+
+# --- Общий before_script для API-тестов ---
+.api_before_script: &api_before_script
+  - go version
+
+# =============== UI-тесты ===============
+manual_ui:
+  stage: manual_test
+  image: golang:1.25-bookworm
+  when: manual
+  before_script:
+    - *ui_before_script
+  script:
+    - go test -v -p ./tests/... --tags=ui
+  artifacts:
+    when: always
+    paths:
+      - allure-results/
+    expire_in: 3 days
+
+# =============== Smoke-тесты (UI + API) ===============
+manual_smoke:
+  stage: manual_test
+  image: golang:1.25-bookworm
+  when: manual
+  before_script:
+    - *ui_before_script
+  script:
+    - go test -v -p ./tests/... --tags=smoke
+  artifacts:
+    when: always
+    paths:
+      - allure-results/
+    expire_in: 3 days
+
+# =============== Регрессия (UI + API) ===============
+manual_regression:
+  stage: manual_test
+  image: golang:1.25-bookworm
+  when: manual
+  before_script:
+    - *ui_before_script
+  script:
+    - go test -v -p ./tests/... --tags=regression
+  artifacts:
+    when: always
+    paths:
+      - allure-results/
+    expire_in: 3 days
+
+# =============== Только API-тесты ===============
+manual_api:
+  stage: manual_test
+  image: golang:1.25-bookworm
+  when: manual
+  before_script:
+    - *api_before_script
+  script:
+    - go test -v -p ./tests/... --tags=api
+  artifacts:
+    when: always
+    paths:
+      - allure-results/
+    expire_in: 3 days
+
+after_script:
+  - cd allure-results && zip -r results.zip ./* && cd ..
+  - curl -X POST \
+    -F "results=@allure-results/results.zip" \
+    http://<IP_ИЛИ_ДОМЕН_СЕРВЕРА>:5050/allure-docker-service/send-results

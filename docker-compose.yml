@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    restart: unless-stopped
+    user: root  # требуется для доступа к Docker на хосте
+    ports:
+      - "8080:8080"    # веб-интерфейс Jenkins
+      - "50000:50000"  # для подключения внешних агентов (опционально)
+    volumes:
+      - ./jenkins_home:/var/jenkins_home                # данные Jenkins
+      - /var/run/docker.sock:/var/run/docker.sock       # доступ к Docker хоста
+      - /usr/bin/docker:/usr/bin/docker                 # CLI Docker внутри контейнера
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false # удалить если сервер поднимается с0
+
+  allure:
+    image: frankescobar/allure-docker-service
+    container_name: allure-server
+    restart: unless-stopped
+    ports:
+      - "5050:5050"  # Allure Web UI
+    volumes:
+      - ./allure-results:/app/allure-results  # сюда Jenkins пишет результаты
+    environment:
+      - CHECK_RESULTS_EVERY_SECONDS=3  # автообновление отчёта
+      - KEEP_HISTORY=1                 # сохранять историю запусков
